@@ -1,0 +1,264 @@
+<?php
+
+/**
+ * @file
+ * Integrates Drupal Commerce with CiviCRM Membership
+ */
+
+/**
+ * Implements hook_help().
+ */
+function commerce_civicrm_membership_help($path = 'admin/help#commerce_civicrm_membership') {
+  switch ($path) {
+    case 'admin/help#commerce_civicrm_membership':
+      return t('This module integrates Drupal Commerce with CiviCRM Membership. When a customer purchases something from the online store, their billing name and address information is added to Commerce CiviCRM Module then this module add Membership with contribution.');
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_civicrm_membership_menu() {
+  $items['admin/commerce/config/civicrm_membership'] = array(
+    'title' => 'CiviCRM Membership',
+    'description' => 'Configure Drupal Commerce and CiviCRM Membership integration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_civicrm_membership_admin'),
+    'access arguments' => array('configure store'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements CiviCRM Membership configuration form.
+ */
+function commerce_civicrm_membership_admin() {
+  if (!civicrm_initialize()) {
+    return;
+  }
+
+  require_once 'CRM/Core/Config.php';
+
+  $contact_types = array();
+  $sub_types = array();
+  $result = civicrm_api3('contact_type', 'get', array('is_active' => 1));
+
+  foreach ($result['values'] as $all_contact_type) {
+    if (empty($all_contact_type['parent_id'])) {
+      $contact_types[strtolower($all_contact_type['name'])] = $all_contact_type['label'];
+      continue;
+    }
+    $sub_types[strtolower($result['values'][$all_contact_type['parent_id']]['name'])][$all_contact_type['name']] = $all_contact_type['label'];
+  }
+
+  // echo '<pre>';
+  // print_r($mem_result);
+  // echo '</pre>';
+
+  $form = array();
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'commerce_civicrm_membership') . '/commerce_civicrm_membership.css',
+  );
+
+  $form['commerce_civicrm_contact_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Contact type'),
+    '#default_value' => variable_get('commerce_civicrm_contact_type', array()),
+    '#options' => $contact_types,
+    '#required' => TRUE,
+    '#description' => t('Select a Contact type.'),
+  );
+
+  $form['contact'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contact Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#attributes' =>  array('class' => array('three-col-fields')),
+  );
+  $form['contact']['commerce_civicrm_existing_contact'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Existing Contact'),
+    '#default_value' => variable_get('commerce_civicrm_existing_contact', ''),
+  );
+
+  foreach (array('prefix_id' => t('Name Prefix'), 'first_name' => t('First Name'), 'middle_name' => t('Middle Name'), 'last_name' => t('Last Name'), 'suffix_id' => t('Name Suffix')) as $key => $label) {
+      $form['contact']['contact_' . $key] = array(
+        '#title' => $label,
+        '#type' => 'checkbox',
+        '#default_value' => variable_get('contact_' . $key, ''),
+      );
+  }
+  $form['contact']['contact_nick_name'] = array(
+    '#title' => t('Nickname'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_nick_name', ''),
+  );
+  $form['contact']['contact_gender_id'] = array(
+    '#title' => t('Gender'),
+    // Gender should be textfield if using https://civicrm.org/extensions/gender-self-identify
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_gender_id', ''),
+
+  );
+  $form['contact']['contact_job_title'] = array(
+    '#title' => t('Job Title'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_job_title', ''),
+  );
+  $form['contact']['contact_birth_date'] = array(
+    '#title' => t('Birth Date'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_birth_date', ''),
+  );
+  $form['contact']['contact_preferred_communication_method'] = array(
+    '#title' => t('Preferred Communication Method(s)'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_preferred_communication_method', ''),
+  );
+  $form['contact']['contact_privacy'] = array(
+    '#title' => t('Privacy Preferences'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_privacy', ''),
+  );
+  $form['contact']['contact_preferred_language'] = array(
+    '#title' => t('Preferred Language'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_preferred_language', ''),
+  );
+
+    $form['contact']['contact_image_URL'] = array(
+      '#title' => t('Upload Image'),
+      '#type' => 'checkbox',
+      '#default_value' => variable_get('contact_image_URL', ''),
+    );
+
+  $form['contact']['contact_contact_id'] = array(
+    '#title' => t('Contact ID'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_contact_id', ''),
+  );
+  $form['contact']['contact_user_id'] = array(
+    '#title' => t('User ID'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_user_id', ''),
+  );
+  $form['contact']['contact_external_identifier'] = array(
+    '#title' => t('External ID'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_external_identifier', ''),
+  );
+  $form['contact']['contact_source'] = array(
+    '#title' => t('Source'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_source', ''),
+  );
+  $form['contact']['contact_cs'] = array(
+    '#title' => t('Checksum'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_cs', ''),
+  );
+  $form['contact']['contact_employer_id'] = array(
+    '#title' => t('Current Employer'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_employer_id', ''),
+  );
+  $form['contact']['contact_is_deceased'] = array(
+    '#title' => t('Is Deceased'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_is_deceased', ''),
+  );
+  $form['contact']['contact_deceased_date'] = array(
+    '#title' => t('Deceased Date'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('contact_deceased_date', ''),
+  );
+
+// $a = field_info_instance('commerce_product', 'commerce_price','product');
+//
+// echo '<pre>';
+// print_r($a);
+// echo '</pre><br/><br/><br/>';
+
+
+
+  return system_settings_form($form);
+}
+function _commerce_civicrm_membership_get_civicrm_memerships(){
+  if (!civicrm_initialize()) {
+    return;
+  }
+  $mem_result = civicrm_api3('membership_type', 'get', array());
+
+  foreach ($mem_result['values'] as $all_membership_type) {
+    $membership_types[$all_membership_type['id']] = $all_membership_type['name'];
+  }
+  return $membership_types;
+}
+
+
+/**
+ * Implements hook_commerce_checkout_pane_info()
+ */
+function commerce_civicrm_membership_commerce_checkout_pane_info() {
+  $panes['commerce_civicrm_membership'] = array(
+    'title' => t('CiviCRM Membership Pane'),
+    'page' => 'checkout',
+    'weight' => 10,
+    'file' => 'includes/commerce_civicrm_membership.checkout_pane.inc',
+    'base' => 'commerce_civicrm_membership_pane',
+  );
+  return $panes;
+}
+
+/**
+ * Implements base_settings_form()
+ */
+function commerce_civicrm_membership_pane_settings_form($checkout_pane) {
+  $form['commerce_civicrm_membership_pane_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('My Module Pane Field'),
+    '#default_value' => variable_get('commerce_civicrm_membership_pane_field', ''),
+  );
+  return $form;
+}
+
+function _commerce_civicrm_membership_add_field($field_machine_name, $field_label, $field_type, $fiedl_default_value){
+  $field = false;
+  if(variable_get($field_machine_name, '')){
+    $field = array(
+      '#title' => $field_label,
+      '#type' => $field_type,
+      '#default_value' => $fiedl_default_value,
+    );
+  }
+  return $field;
+}
+
+/**
+ * Implements base_checkout_form()
+ */
+function commerce_civicrm_membership_pane_checkout_form($form, $form_state, $checkout_pane, $order) {
+
+  $checkout_form['commerce_civicrm_membership_pane_field2'] = array(
+    '#type' => 'textfield',
+    '#title' => t('My Module Pane Field 2'),
+  );
+  foreach (array('prefix_id' => t('Name Prefix'), 'first_name' => t('First Name'), 'middle_name' => t('Middle Name'), 'last_name' => t('Last Name'), 'suffix_id' => t('Name Suffix')) as $key => $label) {
+    if($field = _commerce_civicrm_membership_add_field('contact_' . $key, $label, 'textfield', '')){
+      $form['contact_' . $key] = $field;
+    }
+  }
+
+  return $checkout_form;
+}
+
+/**
+ * Implements base_checkout_form_submit()
+ */
+function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_state, $checkout_pane, $order) {
+  // do something here with
+  // $form_state['values']['my_module_pane_field2']
+}

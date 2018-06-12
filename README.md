@@ -1,2 +1,2 @@
-# Designer Maker Civicrm
-This is a test project. Its built on Drupal 7 and CiviCRM.
+# Commerce CiviCRM Membership Integration Module
+This is a test project. Aim is to build module which integration Commerce with CiviCRM on Drupal 7.

@@ -294,6 +294,13 @@ function commerce_civicrm_membership_pane_checkout_form($form, $form_state, $che
   }
   global $user;
   $civi_user = array();
+  $main_contact_types_selected = variable_get('commerce_civicrm_contact_type', '');
+  $sub_contact_types_selected = variable_get('commerce_civicrm_contact_sub_type_'.$main_contact_types_selected, '');
+  if(!isset($main_contact_types_selected) || $main_contact_types_selected == ''){
+    drupal_set_message(t('Please configure Store > CiviCRM Membership settings.'));
+    return array();
+  }
+
   if(variable_get('commerce_civicrm_existing_contact', false)){
     $civi_user = _commerce_civicrm_membership_get_contact($user->uid);
   }else if(array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
@@ -303,46 +310,55 @@ function commerce_civicrm_membership_pane_checkout_form($form, $form_state, $che
     $civi_user = $res['values'][$res['id']];
   }
 
-  $checkout_form['contact'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Contact Fields'),
-    '#collapsible' => FALSE,
-    '#collapsed' => FALSE,
-  );
+
   $contact_fields_opt = _commerce_civicrm_membership_get_contact_fields();
   $contact_fields = _commerce_civicrm_membership_create_commerce_fields('contact', $contact_fields_opt, $civi_user);
-  $checkout_form['contact'] = array_merge($checkout_form['contact'], $contact_fields['contact']);
+  if(is_array($contact_fields) & count($contact_fields)){
+    $checkout_form['contact'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Contact Fields'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $checkout_form['contact'] = array_merge($checkout_form['contact'], $contact_fields['contact']);
+  }
 
-
-  $checkout_form['communication'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Communication Fields'),
-    '#collapsible' => FALSE,
-    '#collapsed' => FALSE,
-  );
   $communication_fields_opt = _commerce_civicrm_membership_get_communication_fields();
   $communication_fields = _commerce_civicrm_membership_create_commerce_fields('communication', $communication_fields_opt, $civi_user);
-  $checkout_form['communication'] = array_merge($checkout_form['communication'], $communication_fields['communication']);
+  if(is_array($communication_fields) & count($communication_fields)){
+    $checkout_form['communication'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Communication Fields'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $checkout_form['communication'] = array_merge($checkout_form['communication'], $communication_fields['communication']);
+  }
 
-  $checkout_form['demographics'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Demographic Fields'),
-    '#collapsible' => FALSE,
-    '#collapsed' => FALSE,
-  );
   $demographics_fields_opt = _commerce_civicrm_membership_get_demographics_fields();
   $demographics_fields = _commerce_civicrm_membership_create_commerce_fields('demographics', $demographics_fields_opt, $civi_user);
-  $checkout_form['demographics'] = array_merge($checkout_form['demographics'], $demographics_fields['demographics']);
+  if(is_array($demographics_fields) & count($demographics_fields)){
+    $checkout_form['demographics'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Demographic Fields'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $checkout_form['demographics'] = array_merge($checkout_form['demographics'], $demographics_fields['demographics']);
+  }
 
-  $checkout_form['address_fields'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Address Fields'),
-    '#collapsible' => FALSE,
-    '#collapsed' => FALSE,
-  );
   $address_fields_opt = _commerce_civicrm_membership_get_address_fields();
   $address_fields = _commerce_civicrm_membership_create_commerce_fields('address_fields', $address_fields_opt, $civi_user);
-  $checkout_form['address_fields'] = array_merge($checkout_form['address_fields'], $address_fields['address_fields']);
+  if(is_array($address_fields) & count($address_fields)){
+    $checkout_form['address_fields'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Address Fields'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $checkout_form['address_fields'] = array_merge($checkout_form['address_fields'], $address_fields['address_fields']);
+  }
+
 
   return $checkout_form;
 }
@@ -368,6 +384,7 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
     'checkout_payment',
   );
 
+
   if($order->status == "checkout_complete"){
     if (!civicrm_initialize()) {
       return;
@@ -375,23 +392,30 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
 
     foreach($order->commerce_line_items[LANGUAGE_NONE] as $li) {
       $line_item = commerce_line_item_load($li['line_item_id']);
+      if(property_exists($line_item, 'field_membership_start_date')){
+        $field_membership_start_date = $line_item->field_membership_start_date[LANGUAGE_NONE][0]['value'];
+        $membership_start_date = date('Y-m-d', strtotime($field_membership_start_date));
+      }else{
+        $membership_start_date = date('Y-m-d', time());
+      }
+
       $product = commerce_product_load($line_item->commerce_product[LANGUAGE_NONE][0]['product_id']);
       if($product->type == 'membership'){
-        $sku = $product->sku;
+        $split_sku = explode('-', $product->sku);
+        $sku = $split_sku[0];
         $membership_duration_interval = $product->membership_duration_interval[LANGUAGE_NONE][0]['value'];
         $membership_duration_time = $product->membership_duration_time[LANGUAGE_NONE][0]['value'];
         break;
       }
     }
-
+    $membership_end_date = ($membership_duration_time != 'lifetime') ? date('Y-m-d', strtotime($membership_start_date.' +'.$membership_duration_interval.' '.$membership_duration_time)) : '';
     $membership_create_param = array(
       'version' => 3,
       'sequential' => 1,
       'contact_id' => $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number],
       'membership_type_id' => $sku,
-      'join_date' => date('Y-m-d', time()),
-      'start_date' => date('Y-m-d', time()),
-      'end_date' => date('Y-m-d', strtotime('+'.$membership_duration_interval.' '.$membership_duration_time)),
+      'start_date' => $membership_start_date,
+      'end_date' => $membership_end_date,
       'source' => "Drupal Commerce",
     );
     $membership = civicrm_api3('Membership', 'create', $membership_create_param);
@@ -417,10 +441,10 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
       'source' => 'Drupal Commerce',
     );
     $contribution = civicrm_api3('Contribution', 'create', $contribution_create_param);
-    unset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number]);
-
     watchdog('commerce_civicrm_membership', 'User ID:'.$_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number]
           .' Added Contribution ID:'.$contribution['id'].' Added Membership ID:'.$membership['id']);
+
+    unset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number]);
   }
 
 }

@@ -127,7 +127,7 @@ function _commerce_civicrm_membership_create_membership_commerce_product_type(){
     // Membership Name
     'membership_name'	=> array(
       'field_name'   => 'membership_name',
-      'label'        => t('Memberships'),
+      'label'        => t('Membership'),
       'required'     => TRUE,
       'widget'       => array(
         'type'	=> 'options_select'
@@ -227,7 +227,7 @@ function _commerce_civicrm_membership_create_membership_display(){
 
     'membership_types'	=> array(
       'field_name'   => 'membership_types',
-      'label'        => t('Memberships'),
+      'label'        => t('Select Memberships'),
       'required'     => TRUE,
       'widget'       => array(
         'type'	=> 'commerce_product_reference_autocomplete',
@@ -240,7 +240,7 @@ function _commerce_civicrm_membership_create_membership_display(){
         )
       ),
     ),
-    
+
   );
 
   foreach( $instances as $instance ) { // Loop through our instances
@@ -269,7 +269,7 @@ function _commerce_civicrm_membership_add_commerce_product_and_display(){
 
   foreach ($mem_result['values'] as $all_membership_type) {
     $product = commerce_product_new('membership');
-    $product->sku = $all_membership_type['id'];
+    $product->sku = $all_membership_type['id'].'-Membership-'.time();
     $product->title = $all_membership_type['name'];
     $product->language = LANGUAGE_NONE;
     $product->uid = 1;

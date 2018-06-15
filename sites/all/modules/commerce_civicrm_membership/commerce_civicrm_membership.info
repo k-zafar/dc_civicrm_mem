@@ -8,8 +8,4 @@ dependencies[] = commerce_cart
 dependencies[] = commerce_product_ui
 dependencies[] = commerce_product_reference
 
-files[] = commerce_civicrm.rules.inc
-files[] = commerce_civicrm.rules_defaults.inc
-files[] = commerce_civicrm.views_default.inc
-
 configure = admin/commerce/config/civicrm_membership

@@ -253,8 +253,6 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
       }else{
         $default_value = $civi_user[$key];
       }
-    }else if($checkout_form_field['fieldtype'] == 'checkboxes'){
-      $default_value = array();
     }
 
     $field = array(

@@ -488,16 +488,21 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
       $c_address_param = array_merge($c_address_param, $value);
     }
   }
+  if(array_key_exists('birth_date', $param)){
+    $param['birth_date'] = $param['birth_date']['year'].'-'.$param['birth_date']['month'].'-'.$param['birth_date']['day'];
+  }
+  if(array_key_exists('deceased_date', $param)){
+    $param['deceased_date'] = $param['deceased_date']['year'].'-'.$param['deceased_date']['month'].'-'.$param['deceased_date']['day'];
+  }
 
-  $param['birth_date'] = $param['birth_date']['year'].'-'.$param['birth_date']['month'].'-'.$param['birth_date']['day'];
-  $param['deceased_date'] = $param['deceased_date']['year'].'-'.$param['deceased_date']['month'].'-'.$param['deceased_date']['day'];
-
-
-  foreach($param['preferred_communication_method'] as $key => $preferred_communication_method){
-    if(!$preferred_communication_method){
-      unset($param['preferred_communication_method'][$key]);
+  if(array_key_exists('preferred_communication_method', $param)){
+    foreach($param['preferred_communication_method'] as $key => $preferred_communication_method){
+      if(!$preferred_communication_method){
+        unset($param['preferred_communication_method'][$key]);
+      }
     }
   }
+
   if(variable_get('commerce_civicrm_existing_contact', false)){
     $param['id'] = $civi_user['id'];
   }else if(array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)

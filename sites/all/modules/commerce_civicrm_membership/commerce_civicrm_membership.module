@@ -477,7 +477,7 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
   );
   foreach ($form_state['values']['commerce_civicrm_membership'] as $key => $value) {
     $param = array_merge($param, $value);
-    if($key == "address_fields" && $value != ''){
+    if($key == "address_fields" && isset($value) && $value != ''){
       $c_address_param = array_merge($c_address_param, $value);
     }
   }
@@ -506,7 +506,7 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
   $result = civicrm_api3('Contact', 'create', $param);
   $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)] = $result['id'];
   $c_address_param['contact_id'] = $result['id'];
-  if(array_key_exists('address_id', $civi_user)){
+  if(array_key_exists('address_id', $civi_user) && is_numeric($civi_user['address_id'])){
     $c_address_param['id'] = $civi_user['address_id'];
   }
   watchdog('commerce_civicrm_membership', 'Address fields:<pre>'.var_export($c_address_param, TRUE).'</pre>');

@@ -513,11 +513,20 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
   $result = civicrm_api3('Contact', 'create', $param);
   $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)] = $result['id'];
   $c_address_param['contact_id'] = $result['id'];
-  $c_address_param['id'] = $civi_user['address_id'];
+  if(array_key_exists('address_id', $civi_user)){
+    $c_address_param['id'] = $civi_user['address_id'];
+  }
   // finally create / update the contact address
   $new_contact_location = civicrm_api3_address_create($c_address_param);
   $shipping_address =
       $form_state['values']['customer_profile_billing']['customer_profile']->commerce_customer_address[LANGUAGE_NONE][0];
+  // check if the address of type billing exits before creating a new else update
+  $location_info = civicrm_api3('Address', 'get', array(
+    'sequential' => 1,
+    'contact_id' => $result['id'],
+    'location_type_id' => 5,
+  ));
+
   $b_address_param = array(
     'contact_id' => $result['id'],
     'location_type_id' => 5,
@@ -528,6 +537,10 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
     'supplemental_address_1' => $shipping_address['premise'],
     'country_id' => '',
   );
+  // if billing address exist update it
+  if ($location_info['count'] > 0) {
+    $b_address_param['id'] = $location_info['values'][0]['id'];
+  }
   // finally create / update the billing address
   $new_billing_location = civicrm_api3_address_create($b_address_param);
 }

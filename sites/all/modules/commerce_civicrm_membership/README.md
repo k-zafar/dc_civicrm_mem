@@ -19,11 +19,11 @@ Installation & Getting Started
 Documentation
 -------------
 
-1. It let you create a CiviCRM user and exposes most of regular field in provided in Store > CiviCRM Member Settings.
+1. It let you create a CiviCRM user and exposes most of regular field in provided in Store » Configuration » CiviCRM Member Settings.
 2. It add Commerce Product Type and Product Display (content type).
 3. It create CiviCRM Membership as Product type entities.
 4. It create a Membership Product display node for purchasing membership.
-5. Its Store > CiviCRM Member settings/config let you to create new user or update existing along with add new membership which user purchased.
+5. Its  Store » Configuration » CiviCRM Member settings/config let you to create new user or update existing along with add new membership which user purchased.
 
 Issues
 ------

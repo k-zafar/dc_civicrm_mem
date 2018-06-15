@@ -384,7 +384,8 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
   );
 
 
-  if($order->status == "checkout_complete"){
+  if($order->status == "checkout_complete" && array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
+          && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number])){
     if (!civicrm_initialize()) {
       return;
     }
@@ -453,6 +454,9 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
  * Implements base_checkout_form_submit()
  */
 function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_state, $checkout_pane, $order) {
+  if(!is_array($form_state['values']['commerce_civicrm_membership'])){
+    return;
+  }
   if (!civicrm_initialize()) {
     return;
   }

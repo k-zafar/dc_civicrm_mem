@@ -242,7 +242,18 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
   $field = false;
 
   if(variable_get('commerce_civicrm_membership_'.$key, '') && is_array($checkout_form_field)){
-    $default_value = '';
+    
+    $field = array(
+      '#title' => variable_get('commerce_civicrm_membership_'.$key.'_title', $checkout_form_field['label']),
+      '#type' => $checkout_form_field['fieldtype'],
+      '#weight' => variable_get('commerce_civicrm_membership_'.$key.'_weight', ''),
+    );
+    if(array_key_exists('options', $checkout_form_field)){
+      $field['#options'] = $checkout_form_field['options'];
+    }
+    if(array_key_exists($key, $civi_user) && $checkout_form_field['fieldtype'] == 'item'){
+      $field['#markup'] = $civi_user[$key];
+    }
     if(variable_get('commerce_civicrm_existing_contact', false) || (array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
             && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)]))){
       if($checkout_form_field['fieldtype'] == 'date'){
@@ -253,19 +264,7 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
       }else{
         $default_value = $civi_user[$key];
       }
-    }
-
-    $field = array(
-      '#title' => variable_get('commerce_civicrm_membership_'.$key.'_title', $checkout_form_field['label']),
-      '#type' => $checkout_form_field['fieldtype'],
-      '#default_value' => $default_value,
-      '#weight' => variable_get('commerce_civicrm_membership_'.$key.'_weight', ''),
-    );
-    if(array_key_exists('options', $checkout_form_field)){
-      $field['#options'] = $checkout_form_field['options'];
-    }
-    if(array_key_exists($key, $civi_user) && $checkout_form_field['fieldtype'] == 'item'){
-      $field['#markup'] = $civi_user[$key];
+      $field['#default_value'] = $default_value;
     }
   }
   return $field;

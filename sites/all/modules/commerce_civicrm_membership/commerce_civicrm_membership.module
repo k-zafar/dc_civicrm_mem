@@ -454,7 +454,7 @@ function commerce_civicrm_membership_commerce_order_presave($order) {
  * Implements base_checkout_form_submit()
  */
 function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_state, $checkout_pane, $order) {
-  if(!is_array($form_state['values']['commerce_civicrm_membership'])){
+  if(!array_key_exists('commerce_civicrm_membership', $form_state['values'])){
     return;
   }
   if (!civicrm_initialize()) {

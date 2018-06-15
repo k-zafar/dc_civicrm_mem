@@ -473,13 +473,7 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
   );
   // Contact and Billing location.
   $c_address_param = array(
-    'contact_id' => '',
     'location_type_id' => 1,
-    'city' => '',
-    'state_province_id' => '',
-    'postal_code' => '',
-    'street_address' => '',
-    'supplemental_address_1' => '',
   );
   foreach ($form_state['values']['commerce_civicrm_membership'] as $key => $value) {
     $param = array_merge($param, $value);
@@ -531,11 +525,9 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
     'contact_id' => $result['id'],
     'location_type_id' => 5,
     'city' => $shipping_address['locality'],
-    'state_province_id' => '',
     'postal_code' => $shipping_address['postal_code'],
     'street_address' => $shipping_address['thoroughfare'],
     'supplemental_address_1' => $shipping_address['premise'],
-    'country_id' => '',
   );
   // if billing address exist update it
   if ($location_info['count'] > 0) {

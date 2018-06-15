@@ -256,7 +256,7 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
     }
     if(variable_get('commerce_civicrm_existing_contact', false) || (array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
             && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)]))){
-      if($checkout_form_field['fieldtype'] == 'date'){
+      if($checkout_form_field['fieldtype'] == 'date' && $civi_user[$key] !=''){
         $new_date = explode('-', $civi_user[$key]);
         $default_value['month'] = $new_date[1];
         $default_value['day'] = $new_date[2];

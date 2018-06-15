@@ -509,7 +509,7 @@ function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_sta
   if(array_key_exists('address_id', $civi_user)){
     $c_address_param['id'] = $civi_user['address_id'];
   }
-  watchdog('commerce_civicrm_membership', 'Address fields:<pre>'.var_export($c_address_param).'</pre>');
+  watchdog('commerce_civicrm_membership', 'Address fields:<pre>'.var_export($c_address_param, TRUE).'</pre>');
   // finally create / update the contact address
   $new_contact_location = civicrm_api3_address_create($c_address_param);
   $shipping_address =

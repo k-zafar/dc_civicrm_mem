@@ -93,6 +93,8 @@ function _commerce_civicrm_membership_create_membership_commerce_product_type(){
       ),
     ),
 
+
+
   );
 
   $fields = array_merge($field_commerce_price, $fields);
@@ -165,6 +167,8 @@ function _commerce_civicrm_membership_create_membership_commerce_product_type(){
         'type'	=> 'options_select'
       ),
     ),
+
+
   );
 
   foreach( $instances as $instance ) { // Loop through our instances
@@ -207,8 +211,8 @@ function _commerce_civicrm_membership_create_membership_display(){
     'field_name'   => 'membership_types',
     'type'         => 'commerce_product_reference',
     'cardinality'  => -1,
-
     ),
+
 
   );
 
@@ -236,6 +240,7 @@ function _commerce_civicrm_membership_create_membership_display(){
         )
       ),
     ),
+    
   );
 
   foreach( $instances as $instance ) { // Loop through our instances

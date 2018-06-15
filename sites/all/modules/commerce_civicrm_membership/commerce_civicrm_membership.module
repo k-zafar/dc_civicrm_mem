@@ -50,14 +50,9 @@ function commerce_civicrm_membership_admin() {
       $contact_types[strtolower($all_contact_type['name'])] = $all_contact_type['label'];
       continue;
     }
-    $sub_types[strtolower($result['values'][$all_contact_type['parent_id']]['name'])][$all_contact_type['name']] = $all_contact_type['label'];
+    $sub_types[strtolower($result['values'][$all_contact_type['parent_id']]['name'])][strtolower($all_contact_type['name'])] = $all_contact_type['label'];
   }
 
-  // echo '<pre>';
-  // print_r($mem_result);
-  // echo '</pre>';
-
-  $form = array();
   $form['#attached']['css'] = array(
     drupal_get_path('module', 'commerce_civicrm_membership') . '/commerce_civicrm_membership.css',
   );
@@ -70,6 +65,20 @@ function commerce_civicrm_membership_admin() {
     '#required' => TRUE,
     '#description' => t('Select a Contact type.'),
   );
+  foreach ($sub_types as $main_contact_types_selected =>  $sub_type) {
+    $form['commerce_civicrm_contact_sub_type_'.$main_contact_types_selected] = array(
+      '#type' => 'select',
+      '#title' => t('Contact Sub type'),
+      '#default_value' => variable_get('commerce_civicrm_contact_sub_type_'.$main_contact_types_selected, array()),
+      '#options' => drupal_map_assoc($sub_type),
+      '#states' => array(
+          'visible' => array(
+          ':input[name="commerce_civicrm_contact_type"]' => array('value' => $main_contact_types_selected),
+        ),
+      ),
+    );
+  }
+
 
   $form['contact'] = array(
     '#type' => 'fieldset',
@@ -81,110 +90,86 @@ function commerce_civicrm_membership_admin() {
   $form['contact']['commerce_civicrm_existing_contact'] = array(
     '#type' => 'checkbox',
     '#title' => t('Existing Contact'),
-    '#default_value' => variable_get('commerce_civicrm_existing_contact', ''),
+    '#default_value' => variable_get('commerce_civicrm_existing_contact', false),
+    '#suffix' => '<div class="clearfix">&nbsp;</div>',
   );
 
-  foreach (array('prefix_id' => t('Name Prefix'), 'first_name' => t('First Name'), 'middle_name' => t('Middle Name'), 'last_name' => t('Last Name'), 'suffix_id' => t('Name Suffix')) as $key => $label) {
-      $form['contact']['contact_' . $key] = array(
-        '#title' => $label,
-        '#type' => 'checkbox',
-        '#default_value' => variable_get('contact_' . $key, ''),
-      );
-  }
-  $form['contact']['contact_nick_name'] = array(
-    '#title' => t('Nickname'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_nick_name', ''),
-  );
-  $form['contact']['contact_gender_id'] = array(
-    '#title' => t('Gender'),
-    // Gender should be textfield if using https://civicrm.org/extensions/gender-self-identify
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_gender_id', ''),
-
-  );
-  $form['contact']['contact_job_title'] = array(
-    '#title' => t('Job Title'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_job_title', ''),
-  );
-  $form['contact']['contact_birth_date'] = array(
-    '#title' => t('Birth Date'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_birth_date', ''),
-  );
-  $form['contact']['contact_preferred_communication_method'] = array(
-    '#title' => t('Preferred Communication Method(s)'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_preferred_communication_method', ''),
-  );
-  $form['contact']['contact_privacy'] = array(
-    '#title' => t('Privacy Preferences'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_privacy', ''),
-  );
-  $form['contact']['contact_preferred_language'] = array(
-    '#title' => t('Preferred Language'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_preferred_language', ''),
-  );
-
-    $form['contact']['contact_image_URL'] = array(
-      '#title' => t('Upload Image'),
-      '#type' => 'checkbox',
-      '#default_value' => variable_get('contact_image_URL', ''),
-    );
-
-  $form['contact']['contact_contact_id'] = array(
-    '#title' => t('Contact ID'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_contact_id', ''),
-  );
-  $form['contact']['contact_user_id'] = array(
-    '#title' => t('User ID'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_user_id', ''),
-  );
-  $form['contact']['contact_external_identifier'] = array(
-    '#title' => t('External ID'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_external_identifier', ''),
-  );
-  $form['contact']['contact_source'] = array(
-    '#title' => t('Source'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_source', ''),
-  );
-  $form['contact']['contact_cs'] = array(
-    '#title' => t('Checksum'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_cs', ''),
-  );
-  $form['contact']['contact_employer_id'] = array(
-    '#title' => t('Current Employer'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_employer_id', ''),
-  );
-  $form['contact']['contact_is_deceased'] = array(
-    '#title' => t('Is Deceased'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_is_deceased', ''),
-  );
-  $form['contact']['contact_deceased_date'] = array(
-    '#title' => t('Deceased Date'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('contact_deceased_date', ''),
-  );
-
-// $a = field_info_instance('commerce_product', 'commerce_price','product');
-//
-// echo '<pre>';
-// print_r($a);
-// echo '</pre><br/><br/><br/>';
+  $contact_fields_opt = _commerce_civicrm_membership_get_contact_fields();
+  $contact_fields = _commerce_civicrm_membership_create_commerce_config_fields('contact', $contact_fields_opt);
+  $form['contact'] = array_merge($form['contact'], $contact_fields);
 
 
+  $form['communication'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Communication Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#attributes' =>  array('class' => array('three-col-fields')),
+  );
+  $communication_fields_opt = _commerce_civicrm_membership_get_communication_fields();
+  $communication_fields = _commerce_civicrm_membership_create_commerce_config_fields('communication', $communication_fields_opt);
+  $form['communication'] = array_merge($form['communication'], $communication_fields);
+
+  $form['demographics'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Communication Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#attributes' =>  array('class' => array('three-col-fields')),
+  );
+  $demographics_fields_opt = _commerce_civicrm_membership_get_demographics_fields();
+  $demographics_fields = _commerce_civicrm_membership_create_commerce_config_fields('demographics', $demographics_fields_opt);
+  $form['demographics'] = array_merge($form['demographics'], $demographics_fields);
+
+  $form['address_fields'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Communication Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#attributes' =>  array('class' => array('three-col-fields')),
+  );
+  $address_fields_opt = _commerce_civicrm_membership_get_address_fields();
+  $address_fields = _commerce_civicrm_membership_create_commerce_config_fields('address_fields', $address_fields_opt);
+  $form['address_fields'] = array_merge($form['address_fields'], $address_fields);
 
   return system_settings_form($form);
+}
+
+function _commerce_civicrm_membership_create_commerce_config_fields($field_set_key, $form_fields){
+  $form = array();
+
+  foreach ($form_fields as $key => $form_field) {
+    $form[$field_set_key]['commerce_civicrm_membership_'.$key] = array(
+      '#title' => t($form_field['label']),
+      '#type' => 'checkbox',
+      '#default_value' => variable_get('commerce_civicrm_membership_'.$key, ''),
+      '#prefix' => '<div class="field-combo">',
+    );
+    $form[$field_set_key]['commerce_civicrm_membership_'.$key.'_title'] = array(
+      '#title' => t('Set Title for '.$form_field['label']),
+      '#type' => 'textfield',
+      '#default_value' => variable_get('commerce_civicrm_membership_'.$key.'_title', $form_field['label']),
+      '#states' => array(
+        // Hide the settings when the cancel notify checkbox is disabled.
+        'invisible' => array(
+          ':input[name="commerce_civicrm_membership_'.$key.'"]' => array('checked' => FALSE),
+        ),
+      ),
+    );
+    $form[$field_set_key]['commerce_civicrm_membership_'.$key.'_weight'] = array(
+      '#title' => t('Set Weight for '.$form_field['label']),
+      '#type' => 'weight',
+      '#default_value' => variable_get('commerce_civicrm_membership_'.$key.'_weight', 0),
+      '#states' => array(
+        // Hide the settings when the cancel notify checkbox is disabled.
+        'invisible' => array(
+          ':input[name="commerce_civicrm_membership_'.$key.'"]' => array('checked' => FALSE),
+        ),
+      ),
+      '#suffix' => '</div><div class="clearfix">&nbsp;</div>',
+    );
+  }
+  return $form;
 }
 function _commerce_civicrm_membership_get_civicrm_memerships(){
   if (!civicrm_initialize()) {
@@ -198,16 +183,44 @@ function _commerce_civicrm_membership_get_civicrm_memerships(){
   return $membership_types;
 }
 
+function _commerce_civicrm_membership_get_civicrm_lang_options(){
+  if (!civicrm_initialize()) {
+    return;
+  }
+  $lang_options = array();
+  $result = civicrm_api3('OptionValue', 'get', array(
+          'return' => "label,name,value",
+          'option_group_id' => "languages",
+          'is_active' => 1,
+          'options' => array('sort' => "weight", 'limit' => 0),
+        ));
+  foreach ($result['values'] as $option) {
+    $lang_options[$option['name']] = $option['label'];
+  }
+  return $lang_options;
+}
+
+function _commerce_civicrm_membership_get_civicrm_countries(){
+  $country = array();
+  if (!civicrm_initialize()) {
+    return;
+  }
+  $result = civicrm_api3('Country', 'get', array());
+  foreach ($result['values'] as $all_countries) {
+    $country[$all_countries['id']] = $all_countries['name'];
+  }
+  return $country;
+}
 
 /**
  * Implements hook_commerce_checkout_pane_info()
  */
 function commerce_civicrm_membership_commerce_checkout_pane_info() {
+  $title = variable_get('commerce_civicrm_membership_pane_title', 'CiviCRM Membership Pane');
   $panes['commerce_civicrm_membership'] = array(
-    'title' => t('CiviCRM Membership Pane'),
+    'title' => t($title),
     'page' => 'checkout',
     'weight' => 10,
-    'file' => 'includes/commerce_civicrm_membership.checkout_pane.inc',
     'base' => 'commerce_civicrm_membership_pane',
   );
   return $panes;
@@ -217,48 +230,442 @@ function commerce_civicrm_membership_commerce_checkout_pane_info() {
  * Implements base_settings_form()
  */
 function commerce_civicrm_membership_pane_settings_form($checkout_pane) {
-  $form['commerce_civicrm_membership_pane_field'] = array(
+  $form['commerce_civicrm_membership_pane_title'] = array(
     '#type' => 'textfield',
-    '#title' => t('My Module Pane Field'),
-    '#default_value' => variable_get('commerce_civicrm_membership_pane_field', ''),
+    '#title' => t('Checkout Pane Title'),
+    '#default_value' => variable_get('commerce_civicrm_membership_pane_title', 'CiviCRM Membership Pane'),
   );
   return $form;
 }
 
-function _commerce_civicrm_membership_add_field($field_machine_name, $field_label, $field_type, $fiedl_default_value){
+function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civi_user = array()){
   $field = false;
-  if(variable_get($field_machine_name, '')){
+
+  if(variable_get('commerce_civicrm_membership_'.$key, '') && is_array($checkout_form_field)){
+    $default_value = '';
+    if(variable_get('commerce_civicrm_existing_contact', false) || (array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
+            && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)]))){
+      if($checkout_form_field['fieldtype'] == 'date'){
+        $new_date = explode('-', $civi_user[$key]);
+        $default_value['month'] = $new_date[1];
+        $default_value['day'] = $new_date[2];
+        $default_value['year'] = $new_date[0];
+      }else{
+        $default_value = $civi_user[$key];
+      }
+    }else if($checkout_form_field['fieldtype'] == 'checkboxes'){
+      $default_value = array();
+    }
+
     $field = array(
-      '#title' => $field_label,
-      '#type' => $field_type,
-      '#default_value' => $fiedl_default_value,
+      '#title' => variable_get('commerce_civicrm_membership_'.$key.'_title', $checkout_form_field['label']),
+      '#type' => $checkout_form_field['fieldtype'],
+      '#default_value' => $default_value,
+      '#weight' => variable_get('commerce_civicrm_membership_'.$key.'_weight', ''),
     );
+    if(array_key_exists('options', $checkout_form_field)){
+      $field['#options'] = $checkout_form_field['options'];
+    }
+    if(array_key_exists($key, $civi_user) && $checkout_form_field['fieldtype'] == 'item'){
+      $field['#markup'] = $civi_user[$key];
+    }
   }
   return $field;
+}
+
+function _commerce_civicrm_membership_create_commerce_fields($field_set_key, $form_fields, $civi_user){
+  $checkout_form = array();
+
+  foreach ($form_fields as $key => $form_field) {
+    if($field = _commerce_civicrm_membership_add_field($key, $form_field, $civi_user)){
+      $checkout_form[$field_set_key][$key] = $field;
+    }
+  }
+  return $checkout_form;
 }
 
 /**
  * Implements base_checkout_form()
  */
 function commerce_civicrm_membership_pane_checkout_form($form, $form_state, $checkout_pane, $order) {
-
-  $checkout_form['commerce_civicrm_membership_pane_field2'] = array(
-    '#type' => 'textfield',
-    '#title' => t('My Module Pane Field 2'),
-  );
-  foreach (array('prefix_id' => t('Name Prefix'), 'first_name' => t('First Name'), 'middle_name' => t('Middle Name'), 'last_name' => t('Last Name'), 'suffix_id' => t('Name Suffix')) as $key => $label) {
-    if($field = _commerce_civicrm_membership_add_field('contact_' . $key, $label, 'textfield', '')){
-      $form['contact_' . $key] = $field;
-    }
+  $checkout_form = array();
+  if (!civicrm_initialize()) {
+    return;
   }
+  global $user;
+  $civi_user = array();
+  if(variable_get('commerce_civicrm_existing_contact', false)){
+    $civi_user = _commerce_civicrm_membership_get_contact($user->uid);
+  }else if(array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
+          && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)])){
+    $id = $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)];
+    $res = civicrm_api('contact', 'get', array('contact_id' => $id, 'version' => 3));
+    $civi_user = $res['values'][$res['id']];
+  }
+
+  $checkout_form['contact'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contact Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $contact_fields_opt = _commerce_civicrm_membership_get_contact_fields();
+  $contact_fields = _commerce_civicrm_membership_create_commerce_fields('contact', $contact_fields_opt, $civi_user);
+  $checkout_form['contact'] = array_merge($checkout_form['contact'], $contact_fields['contact']);
+
+
+  $checkout_form['communication'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Communication Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $communication_fields_opt = _commerce_civicrm_membership_get_communication_fields();
+  $communication_fields = _commerce_civicrm_membership_create_commerce_fields('communication', $communication_fields_opt, $civi_user);
+  $checkout_form['communication'] = array_merge($checkout_form['communication'], $communication_fields['communication']);
+
+  $checkout_form['demographics'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Demographic Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $demographics_fields_opt = _commerce_civicrm_membership_get_demographics_fields();
+  $demographics_fields = _commerce_civicrm_membership_create_commerce_fields('demographics', $demographics_fields_opt, $civi_user);
+  $checkout_form['demographics'] = array_merge($checkout_form['demographics'], $demographics_fields['demographics']);
+
+  $checkout_form['address_fields'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Address Fields'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $address_fields_opt = _commerce_civicrm_membership_get_address_fields();
+  $address_fields = _commerce_civicrm_membership_create_commerce_fields('address_fields', $address_fields_opt, $civi_user);
+  $checkout_form['address_fields'] = array_merge($checkout_form['address_fields'], $address_fields['address_fields']);
 
   return $checkout_form;
 }
 
 /**
+ * Implements hook_commerce_order_presave().
+ * Update CiviCRM contact when order is updated.
+ *
+ * @param $order
+ *   The order object to be saved.
+ *
+ * @see rules_invoke_all()
+ */
+function commerce_civicrm_membership_commerce_order_presave($order) {
+
+  // Only update when a new order revision is being saved.
+  $statuses = array(
+    'checkout_review',
+    'cart',
+    'checkout_checkout',
+    'checkout_delivery_address',
+    'checkout_shipping',
+    'checkout_payment',
+  );
+
+  if($order->status == "checkout_complete"){
+    if (!civicrm_initialize()) {
+      return;
+    }
+
+    foreach($order->commerce_line_items[LANGUAGE_NONE] as $li) {
+      $line_item = commerce_line_item_load($li['line_item_id']);
+      $product = commerce_product_load($line_item->commerce_product[LANGUAGE_NONE][0]['product_id']);
+      if($product->type == 'membership'){
+        $sku = $product->sku;
+        $membership_duration_interval = $product->membership_duration_interval[LANGUAGE_NONE][0]['value'];
+        $membership_duration_time = $product->membership_duration_time[LANGUAGE_NONE][0]['value'];
+        break;
+      }
+    }
+
+    $membership_create_param = array(
+      'version' => 3,
+      'sequential' => 1,
+      'contact_id' => $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number],
+      'membership_type_id' => $sku,
+      'join_date' => date('Y-m-d', time()),
+      'start_date' => date('Y-m-d', time()),
+      'end_date' => date('Y-m-d', strtotime('+'.$membership_duration_interval.' '.$membership_duration_time)),
+      'source' => "Drupal Commerce",
+    );
+    $membership = civicrm_api3('Membership', 'create', $membership_create_param);
+
+    $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
+    $dao = CRM_Core_DAO::executeQuery($sql, array());
+    while ($dao->fetch()) {
+      $types[$dao->id] = $dao->name;
+      if($dao->name == "Member Dues"){
+        $membership_types_id = $dao->id;
+      }
+    }
+    $total_amount = $order->commerce_order_total[LANGUAGE_NONE][0]['amount'];
+    $contribution_create_param = array(
+      'version' => 3,
+      'contact_id' => $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number],
+      'total_amount' => $total_amount,
+      'financial_type_id' => $membership_types_id,
+      // @FIXME this needs a sensible default
+      'non_deductible_amount' => 00.00,
+      'fee_amount' => 00.00,
+      'net_amount' => $total_amount,
+      'source' => 'Drupal Commerce',
+    );
+    $contribution = civicrm_api3('Contribution', 'create', $contribution_create_param);
+    unset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number]);
+
+    watchdog('commerce_civicrm_membership', 'User ID:'.$_SESSION["commerce_civicrm_membership_check_user"]["checkout"][$order->order_number]
+          .' Added Contribution ID:'.$contribution['id'].' Added Membership ID:'.$membership['id']);
+  }
+
+}
+
+
+/**
  * Implements base_checkout_form_submit()
  */
 function commerce_civicrm_membership_pane_checkout_form_submit($form, &$form_state, $checkout_pane, $order) {
-  // do something here with
-  // $form_state['values']['my_module_pane_field2']
+  if (!civicrm_initialize()) {
+    return;
+  }
+
+  // Needed for civicrm_location_update
+  require_once 'api/v3/Address.php';
+  // Create and Update CiviCRM contact
+  global $user;
+  $civi_user = _commerce_civicrm_membership_get_contact($user->uid);
+
+  $main_contact_types_selected = variable_get('commerce_civicrm_contact_type', '');
+  $sub_contact_types_selected = variable_get('commerce_civicrm_contact_sub_type_'.$main_contact_types_selected, '');
+  $param = array(
+    'version' => 3,
+    'sequential' => 1,
+    'contact_type' => ucfirst($main_contact_types_selected),
+    'contact_sub_type' =>array($sub_contact_types_selected),
+  );
+  // Contact and Billing location.
+  $c_address_param = array(
+    'contact_id' => '',
+    'location_type_id' => 1,
+    'city' => '',
+    'state_province_id' => '',
+    'postal_code' => '',
+    'street_address' => '',
+    'supplemental_address_1' => '',
+    'country_id' => '',
+  );
+  foreach ($form_state['values']['commerce_civicrm_membership'] as $key => $value) {
+    $param = array_merge($param, $value);
+    if($key == "address_fields"){
+      $c_address_param = array_merge($c_address_param, $value);
+    }
+  }
+
+  $param['birth_date'] = $param['birth_date']['year'].'-'.$param['birth_date']['month'].'-'.$param['birth_date']['day'];
+  $param['deceased_date'] = $param['deceased_date']['year'].'-'.$param['deceased_date']['month'].'-'.$param['deceased_date']['day'];
+
+
+  foreach($param['preferred_communication_method'] as $key => $preferred_communication_method){
+    if(!$preferred_communication_method){
+      unset($param['preferred_communication_method'][$key]);
+    }
+  }
+  if(variable_get('commerce_civicrm_existing_contact', false)){
+    $param['id'] = $civi_user['id'];
+  }else if(array_key_exists('commerce_civicrm_membership_check_user', $_SESSION)
+          && isset($_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)])){
+    $param['id'] = $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)];
+  }
+
+  $result = civicrm_api3('Contact', 'create', $param);
+  $_SESSION["commerce_civicrm_membership_check_user"]["checkout"][arg(1)] = $result['id'];
+  $c_address_param['contact_id'] = $result['id'];
+  $c_address_param['id'] = $civi_user['address_id'];
+  // finally create / update the contact address
+  $new_contact_location = civicrm_api3_address_create($c_address_param);
+  $shipping_address =
+      $form_state['values']['customer_profile_billing']['customer_profile']->commerce_customer_address[LANGUAGE_NONE][0];
+  $b_address_param = array(
+    'contact_id' => $result['id'],
+    'location_type_id' => 5,
+    'city' => $shipping_address['locality'],
+    'state_province_id' => '',
+    'postal_code' => $shipping_address['postal_code'],
+    'street_address' => $shipping_address['thoroughfare'],
+    'supplemental_address_1' => $shipping_address['premise'],
+    'country_id' => '',
+  );
+  // finally create / update the billing address
+  $new_billing_location = civicrm_api3_address_create($b_address_param);
+}
+
+
+/**
+ * Retrieves a CiviCRM contact by Drupal user ID.
+ */
+function _commerce_civicrm_membership_get_contact($uid) {
+  $contacts = &drupal_static(__FUNCTION__);
+  if (isset($contacts[$uid])) {
+    return $contacts[$uid];
+  }
+  if (!isset($contacts)) {
+    $contacts = array();
+  }
+  $contacts[$uid] = FALSE;
+  if (!civicrm_initialize()) {
+    return;
+  }
+  require_once 'api/api.php';
+  $res = civicrm_api('uf_match', 'get', array('uf_id' => $uid, 'version' => 3));
+  if ($res['is_error'] || empty($res['id']) || empty($res['values'][$res['id']])) {
+    return FALSE;
+  }
+  $id = $res['values'][$res['id']]['contact_id'];
+  $res = civicrm_api('contact', 'get', array('contact_id' => $id, 'version' => 3));
+  if ($res['is_error']) {
+    return FALSE;
+  }
+  $contacts[$uid] = $res['values'][$res['id']];
+  return $contacts[$uid];
+}
+
+function _commerce_civicrm_membership_get_contact_fields(){
+  $civicrm_fields = array();
+  $civicrm_fields['contact_id'] = array('label' => 'Conact ID','fieldtype' => 'item', 'default_value' => '');
+
+  $civicrm_fields['prefix_id'] = array(
+    'label' => 'Prefix','fieldtype' => 'select', 'default_value' => '',
+    'options'=> array(
+      1=>'Mrs.',
+      2=>'Ms.',
+      3=>'Mr.',
+      4=>'Dr.',
+    ),
+  );
+  $civicrm_fields['first_name'] = array('label' => 'First Name','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['middle_name'] = array('label' => 'Middle Name','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['last_name'] = array('label' => 'Last Name','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['suffix_id'] = array(
+    'label' => 'Suffix','fieldtype' => 'select', 'default_value' => '',
+    'options'=> array(
+      1=>'Jr.',
+      2=>'Sr.',
+      3=>'II',
+      4=>'III',
+      5=>'IV',
+      6=>'V',
+      7=>'VI',
+      8=>'VII',
+    ),
+  );
+  $civicrm_fields['nick_name'] = array('label' => 'Nick Name','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['job_title'] = array('label' => 'Job Title','fieldtype' => 'textfield', 'default_value' => '');
+
+  $civicrm_fields['on_hold'] = array('label' => 'Email On Hold','fieldtype' => 'checkbox', 'default_value' => '');
+
+  $civicrm_fields['phone'] = array('label' => 'Phone','fieldtype' => 'textfield', 'default_value' => '');
+
+  return $civicrm_fields;
+}
+function _commerce_civicrm_membership_get_communication_fields(){
+  $civicrm_fields = array();
+
+  //Communication
+  $civicrm_fields['preferred_communication_method'] = array(
+    'label' => 'Preferred Communication Method','fieldtype' => 'checkboxes', 'default_value' => '',
+    'options'=> array(
+      1=>'Phone',
+      2=>'Email',
+      3=>'Post Mail',
+      4=>'SMS',
+      5=>'Fax',
+    ),
+  );
+  $civicrm_fields['preferred_language'] = array(
+    'label' => 'Preferred Language','fieldtype' => 'select', 'default_value' => '',
+    // Load from CiviCRM Directly
+    'options'=> _commerce_civicrm_membership_get_civicrm_lang_options(),
+  );
+  $civicrm_fields['preferred_mail_format'] = array(
+    'label' => 'Preferred Mail Format','fieldtype' => 'select', 'default_value' => '',
+    'options'=> array(
+      'Both'=>'Both',
+      'HTML'=>'HTML',
+      'Text'=>'Text',
+    ),
+  );
+
+  $civicrm_fields['communication_style_id'] = array(
+    'label' => 'Communication Style','fieldtype' => 'radios', 'default_value' => '',
+    'options'=> array(
+      1=>'Formal',
+      2=>'Familiar',
+    ),
+  );
+
+  $civicrm_fields['do_not_email'] = array(
+    'label' => 'Do Not Email','fieldtype' => 'checkbox', 'default_value' => '',
+  );
+  $civicrm_fields['do_not_phone'] = array(
+    'label' => 'Do Not Phone','fieldtype' => 'checkbox', 'default_value' => '',
+  );
+  $civicrm_fields['do_not_mail'] = array(
+    'label' => 'Do Not Mail','fieldtype' => 'checkbox', 'default_value' => '',
+  );
+  $civicrm_fields['do_not_sms'] = array(
+    'label' => 'Do Not SMS','fieldtype' => 'checkbox', 'default_value' => '',
+  );
+  $civicrm_fields['do_not_trade'] = array(
+    'label' => 'Do Not Trade','fieldtype' => 'checkbox', 'default_value' => '',
+  );
+  $civicrm_fields['is_opt_out'] = array(
+    'label' => 'NO BULK EMAILS (User Opt Out)', 'fieldtype' => 'checkbox', 'default_value' => '',
+  );
+
+
+  return $civicrm_fields;
+}
+function _commerce_civicrm_membership_get_demographics_fields(){
+  $civicrm_fields = array();
+
+  //Demographics
+  $civicrm_fields['gender'] = array(
+    'label' => 'Gender','fieldtype' => 'radios', 'default_value' => '',
+    'options'=> array(
+      'Female'=>'Female',
+      'Male'=>'Male',
+      'Transgender'=>'Transgender',
+    ),
+  );
+  $civicrm_fields['birth_date'] = array('label' => 'Date of Birth','fieldtype' => 'date', 'default_value' => '');
+  $civicrm_fields['is_deceased'] = array('label' => 'Contact is Deceased','fieldtype' => 'checkbox', 'default_value' => '');
+  $civicrm_fields['deceased_date'] = array('label' => 'Deceased Date','fieldtype' => 'date', 'default_value' => '');
+
+  return $civicrm_fields;
+}
+function _commerce_civicrm_membership_get_address_fields(){
+  $civicrm_fields = array();
+
+  //Address Field
+  $civicrm_fields['street_address'] = array('label' => 'Street Address','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['supplemental_address_1'] = array('label' => 'Supplemental Address 1','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['supplemental_address_2'] = array('label' => 'Supplemental Address 2','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['city'] = array('label' => 'City','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['postal_code_suffix'] = array('label' => 'Zip / Postal Code Suffix','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['postal_code'] = array('label' => 'Zip / Postal Code','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['geo_code_1'] = array('label' => 'Latitude','fieldtype' => 'textfield', 'default_value' => '');
+  $civicrm_fields['geo_code_2'] = array('label' => 'Longitude','fieldtype' => 'textfield', 'default_value' => '');
+
+  $civicrm_fields['country_id'] = array(
+    'label' => 'Country','fieldtype' => 'select', 'default_value' => '',
+    // Load from CiviCRM Directly
+    'options'=> _commerce_civicrm_membership_get_civicrm_countries(),
+  );
+
+  return $civicrm_fields;
 }

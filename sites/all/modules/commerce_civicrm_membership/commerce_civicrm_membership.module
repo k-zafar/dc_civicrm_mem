@@ -242,7 +242,7 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
   $field = false;
 
   if(variable_get('commerce_civicrm_membership_'.$key, '') && is_array($checkout_form_field)){
-    
+
     $field = array(
       '#title' => variable_get('commerce_civicrm_membership_'.$key.'_title', $checkout_form_field['label']),
       '#type' => $checkout_form_field['fieldtype'],
@@ -261,6 +261,8 @@ function _commerce_civicrm_membership_add_field($key, $checkout_form_field, $civ
         $default_value['month'] = $new_date[1];
         $default_value['day'] = $new_date[2];
         $default_value['year'] = $new_date[0];
+      }else if ($checkout_form_field['fieldtype'] == 'checkboxes' && !is_array($civi_user[$key])){
+        $default_value = array();
       }else{
         $default_value = $civi_user[$key];
       }

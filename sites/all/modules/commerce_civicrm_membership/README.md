@@ -14,6 +14,7 @@ Installation & Getting Started
   - Check Machine should be: field_membership_start_date
   - Select Field Type: Date
   - Select Field Widget: Select List
+  - Select the checkbox "Include this field on Add to Cart forms for line items of this type."
 
 
 Documentation
